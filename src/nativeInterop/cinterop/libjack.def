@@ -1,0 +1,6 @@
+headers = \
+    jack/jack.h \
+    jack/types.h \
+    jack/midiport.h
+headerFilter = jack/*
+package = jack
