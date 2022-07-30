@@ -1,0 +1,141 @@
+* {
+    /* Yellow colors */
+    color: #ffff4c; /* Yellow */
+    color: #dcff6b; /* Khaki2 */
+    color: #ffe126; /* Gold */
+    color: #ffff00; /* Yellow */
+    color: #b9b000; /* Yellow4 */
+    color: #b9b000; /* Yellow4 */
+    color: #3f3100; /* Gold8 */
+    color: #392b00; /* Gold8 */
+    color: #191900; /* Gold9 */
+    /* White colors */
+    color: #ffffff; /* White */
+    color: #e0ffff; /* LightCyan */
+    /* Red colors */
+    color: #ffbd6c; /* LightSalmon */
+    color: #ff0054; /* Crimson */
+    color: #ff1500; /* Red */
+    color: #ff0000; /* Red */
+    color: #ff0000; /* Red */
+    color: #a8000a; /* Red4 */
+    color: #a00000; /* Red4 */
+    color: #59001d; /* Crimson6 */
+    color: #590000; /* DarkRed4 */
+    /* Purple colors */
+    color: #ff4cff; /* Magenta */
+    color: #ff00ff; /* Magenta */
+    color: #8e66ff; /* MediumSlateBlue */
+    color: #877fe9; /* MediumSlateBlue */
+    color: #d31dff; /* Fuchsia2 */
+    color: #874cff; /* MediumSlateBlue */
+    color: #7a00ff; /* DarkViolet */
+    color: #590059; /* DarkMagenta4 */
+    color: #1e1e30; /* MediumPurple8 */
+    color: #15152a; /* SlateBlue8 */
+    color: #0f0030; /* Indigo7 */
+    color: #190019; /* Purple8 */
+    /* Pink colors */
+    color: #ff4c87; /* HotPink3 */
+    color: #ff005d; /* DeepPink */
+    color: #b21a7d; /* MediumVioletRed2 */
+    color: #220013; /* DeepPink9 */
+    /* Orange colors */
+    color: #ff4c4c; /* Tomato */
+    color: #ff7f00; /* DarkOrange */
+    color: #de513d; /* Tomato2 */
+    color: #ff5400; /* OrangeRed */
+    color: #ff4a00; /* OrangeRed */
+    color: #b35f00; /* DarkOrange4 */
+    color: #993500; /* OrangeRed4 */
+    color: #795100; /* Orange6 */
+    color: #591d00; /* OrangeRed7 */
+    color: #4b1502; /* OrangeRed7 */
+    color: #402100; /* DarkOrange8 */
+    /* Grey colors */
+    color: #7f7f7f; /* Gray */
+    color: #7f7f7f; /* Gray */
+    color: #757575; /* LightGray5 */
+    color: #404040; /* Silver7 */
+    color: #202020; /* DimGray7 */
+    color: #1e1e1e; /* Gray8 */
+    color: #000000; /* Black */
+    /* Green colors */
+    color: #bdff2d; /* GreenYellow */
+    color: #88ff4c; /* GreenYellow */
+    color: #4cff88; /* SpringGreen */
+    color: #59ff71; /* LightGreen3 */
+    color: #9ee12f; /* GreenYellow2 */
+    color: #4cff5e; /* SpringGreen */
+    color: #afed06; /* GreenYellow */
+    color: #00ff99; /* MediumSpringGreen */
+    color: #4cff4c; /* LimeGreen */
+    color: #90ff00; /* Chartreuse */
+    color: #00ff87; /* SpringGreen */
+    color: #72ff15; /* LawnGreen */
+    color: #88e106; /* Chartreuse2 */
+    color: #64ff09; /* LawnGreen */
+    color: #3bff26; /* LimeGreen */
+    color: #00ff55; /* SpringGreen */
+    color: #54ff00; /* LawnGreen */
+    color: #67b50f; /* LawnGreen3 */
+    color: #00ff19; /* Lime */
+    color: #00ff00; /* Lime */
+    color: #00ff00; /* Lime */
+    color: #1ad000; /* Lime3 */
+    color: #436400; /* LawnGreen6 */
+    color: #108b00; /* Lime5 */
+    color: #0d5038; /* MediumSeaGreen6 */
+    color: #00454f; /* Teal5 */
+    color: #005935; /* MediumSpringGreen7 */
+    color: #005735; /* MediumSpringGreen7 */
+    color: #1d5900; /* LawnGreen7 */
+    color: #00591d; /* SpringGreen7 */
+    color: #144c10; /* ForestGreen5 */
+    color: #00590d; /* DarkGreen2 */
+    color: #005900; /* DarkGreen2 */
+    color: #074200; /* DarkGreen4 */
+    color: #142b00; /* LawnGreen8 */
+    color: #033900; /* Green6 */
+    color: #001f12; /* MediumSpringGreen9 */
+    color: #001912; /* MediumSpringGreen9 */
+    color: #001902; /* DarkGreen8 */
+    color: #001900; /* DarkGreen8 */
+    /* Cyan colors */
+    color: #80ffbd; /* Aquamarine */
+    color: #4cc3ff; /* MediumTurquoise */
+    color: #38ffcc; /* Turquoise */
+    color: #4cffb7; /* Turquoise */
+    /* Brown colors */
+    color: #d86a1c; /* Chocolate */
+    color: #835d07; /* DarkGoldenRod4 */
+    color: #693c1c; /* Sienna4 */
+    color: #595900; /* Olive4 */
+    color: #271b00; /* DarkGoldenRod8 */
+    color: #350000; /* Maroon6 */
+    color: #190000; /* Maroon8 */
+    /* Blue colors */
+    color: #9a99ff; /* CornflowerBlue */
+    color: #5b8aff; /* CornflowerBlue */
+    color: #4c88ff; /* DodgerBlue */
+    color: #00a9ff; /* DeepSkyBlue */
+    color: #00a9ff; /* DeepSkyBlue */
+    color: #4c4cff; /* RoyalBlue */
+    color: #0055ff; /* Blue */
+    color: #5400ff; /* Blue */
+    color: #3151c6; /* RoyalBlue2 */
+    color: #3f00ff; /* Blue */
+    color: #002aff; /* Blue */
+    color: #0000ff; /* Blue */
+    color: #0000ff; /* Blue */
+    color: #2500cc; /* MediumBlue */
+    color: #00547f; /* DeepSkyBlue6 */
+    color: #004152; /* DeepSkyBlue7 */
+    color: #16205a; /* RoyalBlue7 */
+    color: #190064; /* Navy3 */
+    color: #001d59; /* MediumBlue6 */
+    color: #000059; /* MediumBlue6 */
+    color: #001019; /* DodgerBlue9 */
+    color: #000819; /* MidnightBlue8 */
+    color: #000019; /* MediumBlue9 */
+}

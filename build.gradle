@@ -1,14 +1,24 @@
 plugins {
-    id 'org.jetbrains.kotlin.multiplatform' version '1.4.21'
+    id 'org.jetbrains.kotlin.multiplatform' version '1.6.21'
 }
 
 
 repositories {
+    google()
     mavenCentral()
 }
 
 kotlin {
-    linuxX64('native') {
+    sourceSets {
+        nativeMain.dependencies {
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0-native-mt"){
+                version {
+                    strictly("1.6.0-native-mt")
+                }
+            }
+        }
+    }
+    linuxX64("native") {
         compilations.main.cinterops {
             libjack {
                 includeDirs.headerFilterOnly("/usr/include", "/usr/include/x86_64-linux-gnu")
@@ -17,6 +27,7 @@ kotlin {
 
         binaries {
             all {
+                binaryOptions["memoryModel"] = "experimental"
                 linkerOpts = ['-L/usr/lib/x86_64-linux-gnu', '-ljack']
             }
             executable {
@@ -24,10 +35,5 @@ kotlin {
             }
         }
     }
-}
-
-wrapper {
-  gradleVersion = '6.7.1'
-  distributionType = 'BIN'
 }
 
