@@ -38,5 +38,8 @@ fun MidiContext.programChange(program: Int, defer: Int = 0) =
     emit(ProgramChange(channel, program, defer))
 
 @ExperimentalUnsignedTypes
-fun MidiContext.sysEx(sysexData: UByteArray) =
-    emit(SysEx(sysexData))
+fun MidiContext.sysEx(id: Int, sysexData: UByteArray) =
+    emit(SysEx(id, sysexData))
+
+fun MidiContext.sysEx(id: Int, size: Int, init: (Int) -> UByte) =
+    emit(SysEx(id, size, init))

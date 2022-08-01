@@ -32,7 +32,7 @@ enum class EventType(val code: Int) {
     SYSRT_STOP(0b1111_1100),
     SYSRT_SENSING(0b1111_1110),
     SYSRT_RESET(0b1111_1111),
-    SYSEX(0b1_1111_0000), // this is a hack!
+    SYSEX(0b1_1111_0000), // this is a hack! TODO: either document or make unhacky
     NOOP(0); // this is a hack!
 
     companion object {
@@ -180,5 +180,7 @@ object NOOPEvent : MidiEvent(NOOP) {
 }
 
 @ExperimentalUnsignedTypes
-class SysEx(sysexData: UByteArray) : MidiEvent(SYSEX)
+class SysEx(val id: Int, val sysexData: UByteArray) : MidiEvent(SYSEX) {
+    constructor(id: Int, size: Int, init: (Int) -> UByte) : this(id, UByteArray(size, init))
+}
 

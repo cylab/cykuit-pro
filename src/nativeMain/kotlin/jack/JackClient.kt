@@ -1,11 +1,11 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 package jack
 
 import kotlinx.cinterop.*
-import midi.*
 import midi.api.EventType.*
 import midi.api.MidiNote.Companion.noteByNumber
 import midi.api.*
-import midi.core.MidiFunImpl
 import midi.core.MidiGroup
 import utils.toKStrings
 
@@ -47,13 +47,30 @@ class JackClient : MidiClient {
         val cyIn = midiInPorts.first { it.contains("cykuit-pro") }
         val cyOut = midiOutPorts.first { it.contains("cykuit-pro") }
 
-        val apc40In = midiInPorts.first { it.contains("APC40") }
-        val apc40Out = midiOutPorts.first { it.contains("APC40") }
+        val fireIn = midiInPorts.firstOrNull { it.contains("FL STUDIO FIRE") }
+        val fireOut = midiOutPorts.firstOrNull { it.contains("FL STUDIO FIRE") }
 
-        println("connecting $apc40Out -> $cyIn")
-        jack_connect(client, apc40Out, cyIn)
-        println("connecting $cyOut -> $apc40In")
-        jack_connect(client, cyOut, apc40In)
+        val apc40In = midiInPorts.firstOrNull { it.contains("APC40") }
+        val apc40Out = midiOutPorts.firstOrNull { it.contains("APC40") }
+
+        var connectedOut = false
+        var connectedIn = false
+
+        when {
+            (fireIn != null && fireOut != null) -> {
+                println("connecting $fireOut -> $cyIn")
+                jack_connect(client, fireOut, cyIn)
+                println("connecting $cyOut -> $fireIn")
+                jack_connect(client, cyOut, fireIn)
+            }
+            (apc40In != null && apc40Out != null) -> {
+                println("connecting $apc40Out -> $cyIn")
+                jack_connect(client, apc40Out, cyIn)
+                println("connecting $cyOut -> $apc40In")
+                jack_connect(client, cyOut, apc40In)
+            }
+            else -> throw IllegalStateException("No Akai Fire nor APC40 connected!")
+        }
 
         val callback = staticCFunction(
             fun(nframes: jack_nframes_t, ptr: COpaquePointer?): Int {
@@ -246,6 +263,33 @@ class JackClient : MidiClient {
                                 jack_midi_event_reserve(outputBuffer, 0, 1)!!.let {
                                     it[0] = event.data0.toUByte()
                                 }
+                            SYSEX -> {
+                                event as SysEx
+                                when {
+                                    // 3 byte manufacturer ID
+                                    event.id > 0x7F -> {
+                                        val data_size = (5 + event.sysexData.size).toULong()
+                                        jack_midi_event_reserve(outputBuffer, 0, data_size)!!.let {
+                                            it[0] = event.data0.toUByte()
+                                            it[1] = ((event.id shr 16) and 0x7F).toUByte()
+                                            it[2] = ((event.id shr 8) and 0x7F).toUByte()
+                                            it[3] = (event.id and 0x7F).toUByte()
+                                            event.sysexData.forEachIndexed { i, byte -> it[i+4] = byte }
+                                            it[event.sysexData.size + 4] = 0xF7.toUByte()
+                                        }
+                                    }
+                                    // 1 byte manufacturer ID
+                                    else -> {
+                                        val data_size = (3 + event.sysexData.size).toULong()
+                                        jack_midi_event_reserve(outputBuffer, 0, data_size)!!.let {
+                                            it[0] = event.data0.toUByte()
+                                            it[1] = (event.id and 0x7F).toUByte()
+                                            event.sysexData.forEachIndexed { i, byte -> it[i+2] = byte }
+                                            it[event.sysexData.size + 2] = 0xF7.toUByte()
+                                        }
+                                    }
+                                }
+                            }
                             else -> {
                             }
                         }
