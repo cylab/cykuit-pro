@@ -3,16 +3,14 @@ package midi.api
 import jack.JackClient
 
 interface MidiClient {
-    val midiIn: MidiIn
-    val midiOut: MidiOut
+    val midiIns: MidiIns
+    val midiOuts: MidiOuts
     val midiClock: MidiClock
 
     fun destroy()
 
     companion object {
-        val default : JackClient by lazy {
-            JackClient()
-        }
+        val default : MidiClient by lazy { JackClient() }
     }
 }
 

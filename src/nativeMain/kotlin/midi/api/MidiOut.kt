@@ -1,5 +1,6 @@
 package midi.api
 
-import midi.api.MidiFun
+interface MidiOut : MidiFun {
+    val name: String
+}
 
-fun interface MidiOut : MidiFun

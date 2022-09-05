@@ -1,19 +1,34 @@
 package midi.api
 
 import midi.api.EventType.*
+import midi.api.MidiNote.Companion.noteByNumber
 import midi.core.justify
 
 sealed class MidiEvent(
-    val type: EventType,
-    val channel: Int = 0,
     val data1: Int = 0,
     val data2: Int = 0,
-    val defer: Int = 0
+    val defer: Int = 0,
+    val channel: Int = 0,
+    val type: EventType
 ) {
     val data0 = (type.code + (channel and 0b0000_1111)) and 0b1111_1111
 
+    open infix fun matches(other: MidiEvent) = (channel == other.channel && data1 == other.data1)
+
     override fun toString() =
         "$type\tchannel:$channel\tdata1:$data1\tdata2:$data2" + if (defer != 0) "\tdefer:$defer" else ""
+
+    open fun copy(
+        data1: Int = this.data1,
+        data2: Int = this.data2,
+        defer: Int = this.defer,
+        channel: Int = this.channel,
+    ) = when (this.type) {
+        NOTE_ON -> NoteOn(noteByNumber[data1], data2, defer, channel)
+        NOTE_OFF -> NoteOff(noteByNumber[data1], data2, defer, channel)
+        CONTROL_CHANGE -> ControlChange(data1, data2, defer, channel)
+        else -> NOOPEvent // TODO: push implementations into subclasses
+    }
 }
 
 
@@ -36,44 +51,51 @@ enum class EventType(val code: Int) {
     NOOP(0); // this is a hack!
 
     companion object {
-        fun fromMessageHead(bits: Int): EventType? {
-            val code = when {
-                bits and 0b1111_0000 == 0b1111_0000 -> bits
-                else -> bits and 0b1111_0000
-            }
-            return when (code) {
-                NOTE_ON.code -> NOTE_ON
-                NOTE_OFF.code -> NOTE_OFF
-                PITCH_BEND.code -> PITCH_BEND
-                AFTERTOUCH.code -> AFTERTOUCH
-                POLY_AFTERTOUCH.code -> POLY_AFTERTOUCH
-                CONTROL_CHANGE.code -> CONTROL_CHANGE
-                PROGRAM_CHANGE.code -> PROGRAM_CHANGE
-                SYSRT_CLOCK.code -> SYSRT_CLOCK
-                SYSRT_START.code -> SYSRT_START
-                SYSRT_CONTINUE.code -> SYSRT_CONTINUE
-                SYSRT_STOP.code -> SYSRT_STOP
-                SYSRT_SENSING.code -> SYSRT_SENSING
-                SYSRT_RESET.code -> SYSRT_RESET
-                else -> null
-            }
+        fun fromHead(bits: Int) = when (bits and 0b1111_0000) {
+            NOTE_ON.code -> NOTE_ON
+            NOTE_OFF.code -> NOTE_OFF
+            PITCH_BEND.code -> PITCH_BEND
+            AFTERTOUCH.code -> AFTERTOUCH
+            POLY_AFTERTOUCH.code -> POLY_AFTERTOUCH
+            CONTROL_CHANGE.code -> CONTROL_CHANGE
+            PROGRAM_CHANGE.code -> PROGRAM_CHANGE
+            SYSRT_CLOCK.code -> SYSRT_CLOCK
+            SYSRT_START.code -> SYSRT_START
+            SYSRT_CONTINUE.code -> SYSRT_CONTINUE
+            SYSRT_STOP.code -> SYSRT_STOP
+            SYSRT_SENSING.code -> SYSRT_SENSING
+            SYSRT_RESET.code -> SYSRT_RESET
+            else -> NOOP
         }
     }
 }
 
-sealed class SysrtEvent(type: EventType) : MidiEvent(type) {
+sealed class SysrtEvent(type: EventType) : MidiEvent(type = type) {
     override fun toString() = justify(
         type to -15,
         "defer:" to 10, defer to 5
     )
 }
 
-sealed class NoteEvent(type: EventType, channel: Int, val note: MidiNote, data2: Int = 0, defer: Int = 0) :
-    MidiEvent(type, channel, data1 = note.number, data2 = data2, defer = defer)
+sealed class NoteEvent(
+    val note: MidiNote,
+    data2: Int = 0,
+    defer: Int = 0,
+    channel: Int = 0,
+    type: EventType = NOOP
+) : MidiEvent(data1 = note.number, data2 = data2, defer = defer, channel, type) {
+    constructor(
+        note: Int,
+        data2: Int = 0,
+        defer: Int = 0,
+        channel: Int = 0,
+        type: EventType = NOOP
+    ) : this(noteByNumber[note], data2, defer, channel, type)
+}
 
 
-class NoteOn(channel: Int, note: MidiNote, velocity: Int = 127, defer: Int = 0) :
-    NoteEvent(NOTE_ON, channel, note, data2 = velocity, defer = defer) {
+class NoteOn(note: MidiNote, velocity: Int = 127, defer: Int = 0, channel: Int = 0) :
+    NoteEvent(note, data2 = velocity, defer = defer, channel, NOTE_ON) {
     val velocity: Int get() = data2
 
     override fun toString() = justify(
@@ -85,8 +107,8 @@ class NoteOn(channel: Int, note: MidiNote, velocity: Int = 127, defer: Int = 0) 
     )
 }
 
-class NoteOff(channel: Int, note: MidiNote, velocity: Int = 0, defer: Int = 0) :
-    NoteEvent(NOTE_OFF, channel, note, data2 = velocity, defer = defer) {
+class NoteOff(note: MidiNote, velocity: Int = 0, defer: Int = 0, channel: Int = 0) :
+    NoteEvent(note, data2 = velocity, defer = defer, channel, NOTE_OFF) {
     val velocity: Int get() = data2
 
     override fun toString() = justify(
@@ -98,8 +120,8 @@ class NoteOff(channel: Int, note: MidiNote, velocity: Int = 0, defer: Int = 0) :
     )
 }
 
-class PitchBend(channel: Int, val bend: Int, defer: Int = 0) :
-    MidiEvent(PITCH_BEND, channel, data1 = bend and 0b0111_1111, data2 = (bend shr 7) and 0b0111_1111, defer = defer) {
+class PitchBend(val bend: Int, defer: Int = 0, channel: Int = 0) :
+    MidiEvent(data1 = bend and 0b0111_1111, data2 = (bend shr 7) and 0b0111_1111, defer = defer, channel, PITCH_BEND) {
 
     override fun toString() = justify(
         type to -15,
@@ -109,8 +131,8 @@ class PitchBend(channel: Int, val bend: Int, defer: Int = 0) :
     )
 }
 
-class Aftertouch(channel: Int, pressure: Int = 0, defer: Int = 0) :
-    MidiEvent(AFTERTOUCH, channel, data1 = pressure, defer = defer) {
+class Aftertouch(pressure: Int = 0, defer: Int = 0, channel: Int = 0) :
+    MidiEvent(data1 = pressure, defer = defer, channel = channel, type = AFTERTOUCH) {
     val pressure: Int get() = data1
 
     override fun toString() = justify(
@@ -121,8 +143,8 @@ class Aftertouch(channel: Int, pressure: Int = 0, defer: Int = 0) :
     )
 }
 
-class PolyAftertouch(channel: Int, note: MidiNote, pressure: Int = 0, defer: Int = 0) :
-    NoteEvent(POLY_AFTERTOUCH, channel, note, data2 = pressure, defer = defer) {
+class PolyAftertouch(note: MidiNote, pressure: Int = 0, defer: Int = 0, channel: Int = 0) :
+    NoteEvent(note, data2 = pressure, defer = defer, channel, POLY_AFTERTOUCH) {
     val pressure: Int get() = data2
 
     override fun toString() = justify(
@@ -134,8 +156,8 @@ class PolyAftertouch(channel: Int, note: MidiNote, pressure: Int = 0, defer: Int
     )
 }
 
-class ControlChange(channel: Int, control: Int, value: Int, defer: Int = 0) :
-    MidiEvent(CONTROL_CHANGE, channel, data1 = control, data2 = value, defer = defer) {
+class ControlChange(control: Int, value: Int, defer: Int = 0, channel: Int = 0) :
+    MidiEvent(data1 = control, data2 = value, defer = defer, channel, CONTROL_CHANGE) {
     val control: Int get() = data1
     val value: Int get() = data2
 
@@ -148,8 +170,8 @@ class ControlChange(channel: Int, control: Int, value: Int, defer: Int = 0) :
     )
 }
 
-class ProgramChange(channel: Int, program: Int, defer: Int = 0) :
-    MidiEvent(PROGRAM_CHANGE, channel, data1 = program, defer = defer) {
+class ProgramChange(program: Int, defer: Int = 0, channel: Int = 0) :
+    MidiEvent(data1 = program, defer = defer, channel = channel, type = PROGRAM_CHANGE) {
     val program: Int get() = data1
 
     override fun toString() = justify(
@@ -172,7 +194,7 @@ class Sensing : SysrtEvent(SYSRT_SENSING)
 
 class ResetPlay : SysrtEvent(SYSRT_RESET)
 
-object NOOPEvent : MidiEvent(NOOP) {
+object NOOPEvent : MidiEvent(type = NOOP) {
     override fun toString() = justify(
         type to -15,
         "defer:" to 10, defer to 5
@@ -180,7 +202,7 @@ object NOOPEvent : MidiEvent(NOOP) {
 }
 
 @ExperimentalUnsignedTypes
-class SysEx(val id: Int, val sysexData: UByteArray) : MidiEvent(SYSEX) {
+class SysEx(val id: Int, val sysexData: UByteArray) : MidiEvent(type = SYSEX) {
     constructor(id: Int, size: Int, init: (Int) -> UByte) : this(id, UByteArray(size, init))
 }
 
