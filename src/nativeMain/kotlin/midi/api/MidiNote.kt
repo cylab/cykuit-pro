@@ -340,4 +340,6 @@ enum class MidiNote(val number: Int) {
 }
 
 operator fun MidiNote.plus(offset: Int) = noteByNumber[this.number + offset]
+operator fun MidiNote.minus(offset: Int) = noteByNumber[this.number - offset]
 operator fun Int.plus(base: MidiNote) = noteByNumber[this + base.number]
+operator fun Int.minus(base: MidiNote) = noteByNumber[this - base.number]

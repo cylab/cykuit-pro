@@ -6,78 +6,124 @@ import controller.MidiControlType.PAD
 import controller.MidiControlType.PUSH_BUTTON
 import controller.MidiControlType.ROTARY
 import controller.MidiControlType.TOGGLE_BUTTON
-import midi.api.MidiEvent
+import controller.buttons.GenericButton
+import controller.events.*
+import midi.api.*
 import midi.api.MidiNote.C0
-import midi.api.NoteOn
 
 enum class MidiControlType {
     PUSH_BUTTON, TOGGLE_BUTTON, FADER, KNOB, ROTARY, PAD
 }
 
 sealed class MidiControl(
-    val mapping: MidiEvent,
-    val name: String = "unnamed",
+    name: String? = null,
     val type: MidiControlType = PUSH_BUTTON
 ) {
-    open infix fun matches(event: MidiEvent) = mapping matches event
+    val name: String = name ?: this::class.simpleName!!
 }
 
-class PushButton(mapping: MidiEvent, name: String = "unnamed") : MidiControl(mapping, name, PUSH_BUTTON)
-class ToggleButton(mapping: MidiEvent, name: String = "unnamed") : MidiControl(mapping, name, TOGGLE_BUTTON)
-class Fader(mapping: MidiEvent, name: String = "unnamed") : MidiControl(mapping, name, FADER)
-class Knob(mapping: MidiEvent, name: String = "unnamed") : MidiControl(mapping, name, KNOB)
-class Rotary(mapping: MidiEvent, name: String = "unnamed") : MidiControl(mapping, name, ROTARY)
+class PushButton(mapping: ProtocolEvent, name: String = "unnamed") : MidiControl(name, PUSH_BUTTON)
+class ToggleButton(mapping: ProtocolEvent, name: String = "unnamed") : MidiControl(name, TOGGLE_BUTTON)
+class Fader(mapping: ProtocolEvent, name: String = "unnamed") : MidiControl(name, FADER)
+class Knob(mapping: ProtocolEvent, name: String = "unnamed") : MidiControl(name, KNOB)
+class Rotary(mapping: ProtocolEvent, name: String = "unnamed") : MidiControl(name, ROTARY)
 
 class Pad(
-    mapping: MidiEvent,
-    name: String = "unnamed",
-    private val onChange: ((MidiControl) -> Unit)? = null
-) : MidiControl(mapping, name, PAD) {
+    val index: Int,
+    val mapPress: Pair<ProtocolEvent, Pad.(ProtocolEvent) -> ControlEvent>,
+    val mapRelease: Pair<ProtocolEvent, Pad.(ProtocolEvent) -> ControlEvent>,
+    name: String = "unnamed"
+) : MidiControl(name, PAD) {
     var color: Int = 0x00_00_00
         set(value) {
-            if(field != value) {
+            if (field != value) {
                 field = value
                 dirty = true
-                onChange?.invoke(this)
             }
         }
     var dirty = true
+
+    fun emitMapped(midi: MidiContext, event: MidiEvent) {
+        when {
+            mapPress.first matches event -> midi.emit(mapPress.second.invoke(this, event as ProtocolEvent))
+            mapRelease.first matches event -> midi.emit(mapRelease.second.invoke(this, event as ProtocolEvent))
+        }
+    }
 }
 
 class Pads(
     val cols: Int,
     val rows: Int,
-    baseMapping: MidiEvent = NoteOn(C0),
-    init: (Int) -> Pad = { Pad(baseMapping.copy(baseMapping.data1 + it), "Pad $it") }
+    mapPressBase: ProtocolEvent = NoteOn(C0),
+    mapReleaseBase: ProtocolEvent = NoteOn(C0),
+    init: (Int) -> Pad = { index ->
+        Pad(
+            index,
+            mapPressBase.copy(mapPressBase.data1 + index) to { PadPressed(this, it.data2, it.defer) },
+            mapReleaseBase.copy(mapReleaseBase.data1 + index) to { PadReleased(this, it.data2, it.defer) },
+            "Pad (${index % cols},${index / cols})"
+        )
+    }
 ) : List<Pad> by List(cols * rows, init) {
+
+    fun location(index: Int): Pair<Int, Int> = when (index in 0 until size) {
+        true -> index % cols to index / cols
+        else -> throw IndexOutOfBoundsException("index: ${index}, size: $size")
+    }
 
     fun get(col: Int, row: Int) = when ((col in 0 until cols) && (row in 0 until rows)) {
         true -> get(col + row * cols)
         else -> throw IndexOutOfBoundsException("col: $col, row: $row, index: ${col + row * cols}, size: $size")
     }
+
+    val dirtyIndices
+        get() = indices.filter { get(it).dirty }.onEach { get(it).dirty = false }
+
+    val lastCol = cols - 1
+    val lastRow = rows - 1
 }
 
 class Buttons(
     val amount: Int,
-    baseMapping: MidiEvent = NoteOn(C0),
-    init: (Int) -> Button = { Button(baseMapping.copy(baseMapping.data1 + it), "Button $it") }
-) : List<Button> by List(amount, init)
+    mapPressBase: ProtocolEvent = NoteOn(C0),
+    mapReleaseBase: ProtocolEvent = NoteOn(C0),
+    init: (Int) -> Button = { number ->
+        GenericButton(
+            number,
+            mapPressBase.copy(mapPressBase.data1 + number),
+            mapReleaseBase.copy(mapReleaseBase.data1 + number),
+            "Button $number"
+        )
+    }
+) : List<Button> by List(amount, init) {
+    val dirtyIndices
+        get() = indices.filter { get(it).dirty }.onEach { get(it).dirty = false }
 
-class Button(
-    mapping: MidiEvent,
-    name: String = "unnamed",
-    private val onChange: ((MidiControl) -> Unit)? = null
-) : MidiControl(mapping, name, PUSH_BUTTON) {
+    val last = amount - 1
+
+    inline fun <reified T : Button> indexOf(num: Int = 0) = indices.filter { get(it) is T }
+        .getOrElse(num) { throw NoSuchElementException("Can't find button $num for type '${T::class.simpleName}'") }
+}
+
+open class Button(
+    val index: Int,
+    val mapPress: Pair<ProtocolEvent, Button.(ProtocolEvent) -> ControlEvent>,
+    val mapRelease: Pair<ProtocolEvent, Button.(ProtocolEvent) -> ControlEvent>,
+    name: String = "unnamed"
+) : MidiControl(name, PUSH_BUTTON) {
     var value: Int = 0
         set(value) {
-            if(field != value) {
+            if (field != value) {
                 field = value
                 dirty = true
-                onChange?.invoke(this)
             }
         }
     var dirty = true
+
+    fun emitMapped(midi: MidiContext, event: MidiEvent) {
+        when {
+            mapPress.first matches event -> midi.emit(mapPress.second.invoke(this, event as ProtocolEvent))
+            mapRelease.first matches event -> midi.emit(mapRelease.second.invoke(this, event as ProtocolEvent))
+        }
+    }
 }
-
-
-

@@ -10,6 +10,7 @@ import midi.api.ContinuePlay
 import midi.api.ControlChange
 import midi.api.EventType
 import midi.api.MidiEvent
+import midi.api.MidiFun
 import midi.api.MidiIn
 import midi.api.MidiNote
 import midi.api.NoteOff
@@ -29,6 +30,8 @@ internal class JackMidiIn(
     private val port: CPointer<jack_port_t>
 ) : MidiIn, MidiGroup() {
     private val eventStruct = nativeHeap.alloc<jack_midi_event_t>()
+
+    override fun add(vararg next: MidiFun) = addAll(next)
 
     internal fun destroy() {
         nativeHeap.free(eventStruct.rawPtr)

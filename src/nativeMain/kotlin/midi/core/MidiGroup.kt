@@ -29,5 +29,5 @@ open class MidiGroup private constructor(
 
     override fun MidiContext.process(event: MidiEvent) = process(this, event)
 
-    fun add(vararg next: MidiFun) = addAll(next)
+    open fun add(vararg next: MidiFun) = addAll(next)
 }

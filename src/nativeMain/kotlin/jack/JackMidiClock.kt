@@ -4,6 +4,7 @@ import midi.api.ContinuePlay
 import midi.api.EventType
 import midi.api.MidiClock
 import midi.api.MidiEvent
+import midi.api.ProtocolEvent
 import midi.api.ResetPlay
 import midi.api.StartPlay
 import midi.api.StopPlay
@@ -20,7 +21,7 @@ internal class JackMidiClock(private val jack: JackClient) : MidiClock, MidiGrou
     override fun continuePlay() = emitClock(ContinuePlay())
     override fun resetPlay() = emitClock(ResetPlay())
 
-    internal fun emitClock(event: MidiEvent?) {
+    internal fun emitClock(event: ProtocolEvent?) {
         if(event == null)
             return
 

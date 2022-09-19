@@ -4,7 +4,7 @@ import midi.api.MidiContext
 import midi.api.MidiEvent
 import midi.api.MidiFun
 
-class MidiPipe private constructor(midiFuns: List<MidiFun>) : MidiFun, MutableList<MidiFun> by ArrayList(midiFuns) {
+open class MidiPipe private constructor(midiFuns: List<MidiFun>) : MidiFun, MutableList<MidiFun> by ArrayList(midiFuns) {
     constructor() : this(listOf<MidiFun>())
     constructor(fn: MidiFun) : this(listOf(fn))
     constructor(vararg functs: MidiFun) : this(functs.toList())

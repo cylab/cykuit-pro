@@ -22,6 +22,7 @@ import midi.api.EventType.SYSRT_STOP
 import midi.api.MidiContext
 import midi.api.MidiEvent
 import midi.api.MidiOut
+import midi.api.ProtocolEvent
 import midi.api.SysEx
 
 internal class JackMidiOut(
@@ -44,12 +45,14 @@ internal class JackMidiOut(
             val (schedule, event) = it.next()
             if (ticks >= schedule) {
                 it.remove()
-                dispatchEvent(outputBuffer, event)
+                when (event) {
+                    is ProtocolEvent -> dispatchEvent(outputBuffer, event)
+                }
             }
         }
     }
 
-    private fun dispatchEvent(outputBuffer: COpaquePointer?, event: MidiEvent): Unit = when (event.type) {
+    private fun dispatchEvent(outputBuffer: COpaquePointer?, event: ProtocolEvent): Unit = when (event.type) {
         NOTE_ON, NOTE_OFF, PITCH_BEND, POLY_AFTERTOUCH, CONTROL_CHANGE ->
             sendEvent(outputBuffer, event.data0, event.data1, event.data2)
         PROGRAM_CHANGE, AFTERTOUCH ->
@@ -62,9 +65,8 @@ internal class JackMidiOut(
     }
 
     private fun sendEvent(outputBuffer: COpaquePointer?, vararg data: Int) {
-        jack_midi_event_reserve(outputBuffer, 0, data.size.toULong())!!.let {
-            for(i in data.indices) { it[i] = data[i].toUByte() }
-        }
+        jack_midi_event_reserve(outputBuffer, 0, data.size.toULong())!!
+            .let { buffer -> data.indices.forEach { buffer[it] = data[it].toUByte() } }
     }
 
     private fun sendSysex(outputBuffer: COpaquePointer?, event: SysEx) = when {

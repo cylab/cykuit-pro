@@ -24,9 +24,10 @@ internal class JackMidiIns private constructor(
             .toKStrings()
 
     override fun connect(name: String, predicate: (String) -> Boolean): MidiIn {
-        get(name)?.let { return it }
+        get(name)?.let { throw IllegalStateException("MidiIn '$name' already connected!") }
 
-        val srcName = available.filterNot { it.startsWith("${jack.CLIENT_NAME}:") }.first(predicate)
+        val srcName = available.filterNot { it.startsWith("${jack.CLIENT_NAME}:") }.firstOrNull(predicate)
+            ?: throw NoSuchElementException("Available midi-ins contains no port matching the predicate for '$name'.")
         val destName = "${jack.CLIENT_NAME}:$name"
 
         val inPort = jack_port_register(jack.handle, name, JACK_DEFAULT_MIDI_TYPE, JackPortIsInput.toULong(), 0)
@@ -38,6 +39,4 @@ internal class JackMidiIns private constructor(
         backing.add(midiIn)
         return midiIn
     }
-
-    operator fun get(name: String) = firstOrNull() { it.name == name }
 }
