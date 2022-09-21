@@ -2,12 +2,19 @@ package controller.events
 
 import controller.Button
 import controller.buttons.*
+import midi.api.NOOPEvent.channel
+import midi.api.NOOPEvent.type
+import midi.core.justify
 
 abstract class ButtonEvent<T: Button> : ControlEvent {
     abstract val button: T
 
-    override fun toString() =
-        "${this::class.simpleName}\tbutton:${button.name}\tnumber:${button.index}\tdefer:$defer"
+    override fun toString() = justify(
+        this::class.simpleName to -15,
+        "button:" to 10, button.name to -22,
+        "number:" to 10, button.number to 5,
+        "defer:" to 10, defer to 5
+    )
 }
 
 abstract class ButtonPressed<T: Button> : ButtonEvent<T>()

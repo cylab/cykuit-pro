@@ -12,6 +12,7 @@ abstract class MidiActivity(
     var active = active; private set
     var changed = true; protected set
 
+    protected val onProcess = MidiGroup()
     protected val onActivate = MidiGroup()
     protected val onDeactivate = MidiGroup()
     protected val onEvent = MidiGroup()
@@ -20,6 +21,7 @@ abstract class MidiActivity(
 
     final override fun MidiContext.process(event: MidiEvent) {
         val midi = this
+        onProcess.forEach { it.process(midi, event) }
         if(active){
             if(!initialized) {
                 activate(midi)
@@ -51,11 +53,11 @@ abstract class MidiActivity(
         }
         onActivate.forEach { it.process(midi, NOOPEvent) }
         onActivate(midi)
+        changed = true
     }
 
     fun deactivate(midi: MidiContext) = apply {
         active = false
-        changed = true
         onDeactivate.forEach { it.process(midi, NOOPEvent) }
         onDeactivate(midi)
     }

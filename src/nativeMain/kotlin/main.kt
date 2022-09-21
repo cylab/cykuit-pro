@@ -1,11 +1,12 @@
 @file:Suppress("EXPERIMENTAL_API_USAGE", "EXPERIMENTAL_UNSIGNED_LITERALS")
 
 import controller.apc40mk2.APC40MK2Controller
+import controller.buttons.MuteButton
 import controller.fire.FireController
 import midi.api.*
 import midi.core.*
-import sequencer.Keyboard
-import sequencer.SongControl
+import sequencer.*
+import utils.instanceOf
 
 fun main() = with(MidiClient.default) {
 //    makeColors()
@@ -37,15 +38,23 @@ private fun startFire() = with(MidiClient.default) {
     val controller = FireController()
     val keyboard = Keyboard(controller)
     val songControl = SongControl(controller)
-    val logger = MidiFun {
-        if (it !is SysrtEvent) println(it)
+    class Logger(val name: String) : MidiFunImpl ({
+        if (it !is SysrtEvent){
+            print(justify("[$name]" to -10))
+            println(it)
+        }
         emit(it)
-    }
+    })
 
     midiClock.bpm = 100
-
+    val buttonViews = ButtonMappedActivities(
+        "Views",
+        controller.buttons.instanceOf<MuteButton>(0) to HomeView(controller),
+        controller.buttons.instanceOf<MuteButton>(1) to keyboard
+    )
     controllerIn.add(
         MidiPipe(controller.updater, controllerOut),
-        MidiPipe(logger, controller.mapper, logger, MidiGroup(songControl, keyboard), logger, instrumentOut)
+        MidiPipe(Logger("IN"), controller.mapper, Logger("MAPPED"),
+            MidiGroup(songControl, buttonViews), Logger("OUT"), instrumentOut)
     )
 }

@@ -29,7 +29,9 @@ class Knob(mapping: ProtocolEvent, name: String = "unnamed") : MidiControl(name,
 class Rotary(mapping: ProtocolEvent, name: String = "unnamed") : MidiControl(name, ROTARY)
 
 class Pad(
-    val index: Int,
+    val number: Int,
+    val col: Int,
+    val row: Int,
     val mapPress: Pair<ProtocolEvent, Pad.(ProtocolEvent) -> ControlEvent>,
     val mapRelease: Pair<ProtocolEvent, Pad.(ProtocolEvent) -> ControlEvent>,
     name: String = "unnamed"
@@ -57,11 +59,13 @@ class Pads(
     mapPressBase: ProtocolEvent = NoteOn(C0),
     mapReleaseBase: ProtocolEvent = NoteOn(C0),
     init: (Int) -> Pad = { index ->
+        val col = index % cols
+        val row = index / cols
         Pad(
-            index,
+            index, col, row,
             mapPressBase.copy(mapPressBase.data1 + index) to { PadPressed(this, it.data2, it.defer) },
             mapReleaseBase.copy(mapReleaseBase.data1 + index) to { PadReleased(this, it.data2, it.defer) },
-            "Pad (${index % cols},${index / cols})"
+            "Pad ($col,$row)"
         )
     }
 ) : List<Pad> by List(cols * rows, init) {
@@ -76,37 +80,35 @@ class Pads(
         else -> throw IndexOutOfBoundsException("col: $col, row: $row, index: ${col + row * cols}, size: $size")
     }
 
-    val dirtyIndices
-        get() = indices.filter { get(it).dirty }.onEach { get(it).dirty = false }
+    val dirtyPads
+        get() = filter { it.dirty }.onEach { it.dirty = false }
 
     val lastCol = cols - 1
     val lastRow = rows - 1
 }
 
-class Buttons(
-    val amount: Int,
-    mapPressBase: ProtocolEvent = NoteOn(C0),
-    mapReleaseBase: ProtocolEvent = NoteOn(C0),
-    init: (Int) -> Button = { number ->
-        GenericButton(
-            number,
-            mapPressBase.copy(mapPressBase.data1 + number),
-            mapReleaseBase.copy(mapReleaseBase.data1 + number),
-            "Button $number"
-        )
-    }
-) : List<Button> by List(amount, init) {
-    val dirtyIndices
-        get() = indices.filter { get(it).dirty }.onEach { get(it).dirty = false }
+class Buttons(buttons: List<Button>) : List<Button> by buttons {
+    constructor(vararg buttons: Button) : this(buttons.asList())
+    constructor(
+        amount: Int,
+        mapPressBase: ProtocolEvent = NoteOn(C0),
+        mapReleaseBase: ProtocolEvent = NoteOn(C0),
+        init: (Int) -> Button = { number ->
+            GenericButton(
+                number,
+                mapPressBase.copy(mapPressBase.data1 + number),
+                mapReleaseBase.copy(mapReleaseBase.data1 + number),
+                "Button $number"
+            )
+        }
+    ) : this(List(amount, init))
 
-    val last = amount - 1
-
-    inline fun <reified T : Button> indexOf(num: Int = 0) = indices.filter { get(it) is T }
-        .getOrElse(num) { throw NoSuchElementException("Can't find button $num for type '${T::class.simpleName}'") }
+    val dirtyControls
+        get() = filter { it.dirty }.onEach { it.dirty = false }
 }
 
 open class Button(
-    val index: Int,
+    val number: Int,
     val mapPress: Pair<ProtocolEvent, Button.(ProtocolEvent) -> ControlEvent>,
     val mapRelease: Pair<ProtocolEvent, Button.(ProtocolEvent) -> ControlEvent>,
     name: String = "unnamed"

@@ -11,36 +11,33 @@ import midi.core.controlChange
 
 class FireController : MidiController("Akai Fire Pro") {
 
-    override val buttons = Buttons(25) {
-        when (it) {
-            0 -> SelectButton(it, NoteOn(Cs0), NoteOff(Cs0))
-            1 -> ModeButton(it, NoteOn(D0), NoteOff(D0))
-            2 -> PatternUpButton(it, NoteOn(G0), NoteOff(G0))
-            3 -> PatternDownButton(it, NoteOn(Gs0), NoteOff(Gs0))
-            4 -> BrowserButton(it, NoteOn(A0), NoteOff(A0))
-            5 -> GridLeftButton(it, NoteOn(As0), NoteOff(As0))
-            6 -> GridRightButton(it, NoteOn(B0), NoteOff(B0))
-            7 -> MuteButton(it, 0, NoteOn(C1), NoteOff(C1))
-            8 -> MuteButton(it, 1, NoteOn(Cs1), NoteOff(Cs1))
-            9 -> MuteButton(it, 2, NoteOn(D1), NoteOff(D1))
-            10 -> MuteButton(it, 3, NoteOn(Ds1), NoteOff(Ds1))
-            11 -> VolumeButton(it, NoteOn(`E-1`), NoteOff(E1))
-            12 -> PanButton(it, NoteOn(`F-1`), NoteOff(F1))
-            13 -> FilterButton(it, NoteOn(`Fs-1`), NoteOff(Fs1))
-            14 -> ResonanceButton(it, NoteOn(`G-1`), NoteOff(G1))
-            15 -> StepButton(it, NoteOn(Gs1), NoteOff(Gs1))
-            16 -> NoteButton(it, NoteOn(A1), NoteOff(A1))
-            17 -> DrumButton(it, NoteOn(As1), NoteOff(As1))
-            18 -> PerformButton(it, NoteOn(B1), NoteOff(B1))
-            19 -> ShiftButton(it, NoteOn(C2), NoteOff(C2))
-            20 -> AltButton(it, NoteOn(Cs2), NoteOff(Cs2))
-            21 -> PatternButton(it, NoteOn(D2), NoteOff(D2))
-            22 -> PlayButton(it, NoteOn(Ds2), NoteOff(Ds2))
-            23 -> StopButton(it, NoteOn(E2), NoteOff(E2))
-            24 -> RecordButton(it, NoteOn(F2), NoteOff(F2))
-            else -> GenericButton(it, NoteOn(Fs2), NoteOff(Fs2))
-        }
-    }
+    override val buttons = Buttons(
+        SelectButton(0, NoteOn(Cs0), NoteOff(Cs0)),
+        ModeButton(0, NoteOn(D0), NoteOff(D0)),
+        PatternUpButton(0, NoteOn(G0), NoteOff(G0)),
+        PatternDownButton(0, NoteOn(Gs0), NoteOff(Gs0)),
+        BrowserButton(0, NoteOn(A0), NoteOff(A0)),
+        GridLeftButton(0, NoteOn(As0), NoteOff(As0)),
+        GridRightButton(0, NoteOn(B0), NoteOff(B0)),
+        MuteButton(0, NoteOn(C1), NoteOff(C1)),
+        MuteButton(1, NoteOn(Cs1), NoteOff(Cs1)),
+        MuteButton(2, NoteOn(D1), NoteOff(D1)),
+        MuteButton(3, NoteOn(Ds1), NoteOff(Ds1)),
+        VolumeButton(0, NoteOn(`E-1`), NoteOff(E1)),
+        PanButton(0, NoteOn(`F-1`), NoteOff(F1)),
+        FilterButton(0, NoteOn(`Fs-1`), NoteOff(Fs1)),
+        ResonanceButton(0, NoteOn(`G-1`), NoteOff(G1)),
+        StepButton(0, NoteOn(Gs1), NoteOff(Gs1)),
+        NoteButton(0, NoteOn(A1), NoteOff(A1)),
+        DrumButton(0, NoteOn(As1), NoteOff(As1)),
+        PerformButton(0, NoteOn(B1), NoteOff(B1)),
+        ShiftButton(0, NoteOn(C2), NoteOff(C2)),
+        AltButton(0, NoteOn(Cs2), NoteOff(Cs2)),
+        PatternButton(0, NoteOn(D2), NoteOff(D2)),
+        PlayButton(0, NoteOn(Ds2), NoteOff(Ds2)),
+        StopButton(0, NoteOn(E2), NoteOff(E2)),
+        RecordButton(0, NoteOn(F2), NoteOff(F2)),
+    )
 
     override val pads = Pads(16, 4, NoteOn(Fs2), NoteOff(Fs2))
 
@@ -48,7 +45,7 @@ class FireController : MidiController("Akai Fire Pro") {
 
         override fun onEvent(midi: MidiContext, event: MidiEvent) {
             pads.forEach { it.emitMapped(midi, event) }
-            buttons.forEach { it.emitMapped(midi,event) }
+            buttons.forEach { it.emitMapped(midi, event) }
         }
     }
 
@@ -72,11 +69,10 @@ class FireController : MidiController("Akai Fire Pro") {
         }
 
         override fun onClock(midi: MidiContext, event: MidiEvent) = with(midi) {
-            buttons.dirtyIndices
-                .forEach { controlChange(buttons[it].mapPress.first.data1, buttons[it].value) }
+            buttons.dirtyControls.forEach { controlChange(it.mapPress.first.data1, it.value) }
 
-            pads.dirtyIndices
-                .map { (it shl 24) + (pads[it].color and 0xff_ff_ff) }
+            pads.dirtyPads
+                .map { (it.number shl 24) + (it.color and 0xff_ff_ff) }
                 .let { firePadColors(it) }
         }
     }

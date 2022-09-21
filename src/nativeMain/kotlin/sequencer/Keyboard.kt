@@ -1,6 +1,7 @@
 package sequencer
 
 import controller.MidiController
+import controller.Pad
 import controller.events.PadPressed
 import controller.events.PadReleased
 import midi.activity.MidiActivity
@@ -8,9 +9,8 @@ import midi.api.*
 import midi.api.MidiNote.E1
 import midi.core.noteOff
 import midi.core.noteOn
-import utils.MusicalScale
+import utils.*
 import utils.MusicalScale.Companion.MINOR
-import utils.PropertyListOverlays
 
 class Keyboard(
     val controller: MidiController,
@@ -21,21 +21,21 @@ class Keyboard(
     val scale: MusicalScale = MINOR
 ) : MidiActivity("Keyboard") {
 
-    private val overlays = PropertyListOverlays(2, controller.pads, { color }, { color = it })
+    private val overlays = PropertyOverlays<Pad, Int>(2) { color = it }
     private val colors = overlays[0]
     private val cursor = overlays[1]
-    private val notes = Array(controller.pads.size) { rootNote }
+    private val notes = mutableMapOf<Pad, MidiNote>()
 
     init {
         onClock.add(overlays)
     }
 
     override fun onChange(midi: MidiContext) {
-        controller.pads.indices.forEach {
-            val (col, row) = controller.pads.location(it)
-            val note = rootNote + scale[col + (controller.pads.lastRow - row) * 3]
-            notes[it] = note
-            colors[it] = when {
+        println("Changing colors")
+        controller.pads.forEach { pad ->
+            val note = rootNote + scale[pad.col + (controller.pads.lastRow - pad.row) * 3]
+            notes[pad] = note
+            colors[pad] = when {
                 (note.number - rootNote.number) % 12 == 0 -> rootNoteColor
                 else -> noteColor
             }
@@ -45,16 +45,16 @@ class Keyboard(
     override fun onEvent(midi: MidiContext, event: MidiEvent) = with(midi) {
         when (event) {
             is PadPressed -> {
-                val note = notes[event.pad.index]
+                val note = notes[event.pad]!!
                 noteOn(note, event.velocity)
-                notes.indices
+                notes.keys
                     .filter { notes[it] == note }
                     .forEach { cursor[it] = playColor }
             }
             is PadReleased -> {
-                val note = notes[event.pad.index]
+                val note = notes[event.pad]!!
                 noteOff(note, event.velocity)
-                notes.indices
+                notes.keys
                     .filter { notes[it] == note }
                     .forEach { cursor[it] = null }
             }
