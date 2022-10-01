@@ -1,24 +1,30 @@
 package utils
 
 import kotlinx.cinterop.*
-import midi.api.MidiContext
+import midi.api.*
 
-fun CPointer<CPointerVar<ByteVar>>.toKStrings() = generateSequence(0) { it+1 }
+fun CPointer<CPointerVar<ByteVar>>.toKStrings() = generateSequence(0) { it + 1 }
     .map { this[it] }
     .takeWhile { it != null }
 //    .map { ptr -> ptr?.toKString().also { jack_free(ptr) } }
     .mapNotNull { ptr -> ptr?.toKString() }
     .toList()
 
-inline fun <reified R> Iterable<*>.instanceOf(number: Int = 0) = filterIsInstance<R>()[number]
 
+fun interface Value<T> {
+    operator fun invoke(): T
+}
 
-inline fun <T> blink(interval: Int, supplier: () -> Pair<T?, T?>): MidiContext.() -> T? {
-    val values = supplier()
-    return {
-        when {
-            midiClock.ticks % interval <= (interval / 2) -> values.first
-            else -> values.second
-        }
+class DynamicValue<T>(private val generator: MidiClock.() -> T) : Value<T> {
+    override fun invoke(): T = supply(StoppedClock)
+    fun supply(clock: MidiClock): T = clock.generator()
+}
+
+inline fun <T> blink(interval: Int, first: T, second: T) = DynamicValue {
+    when {
+        ticks % interval <= (interval / 2) -> first
+        else -> second
     }
 }
+
+inline fun <T> blink(interval: Int, first: Value<T>, second: Value<T>) = blink(interval, first(), second())

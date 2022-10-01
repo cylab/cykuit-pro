@@ -3,7 +3,7 @@ package utils
 import midi.api.*
 import midi.core.process
 
-class PropertyOverlays<T, V>(
+class PropertyUpdater<T, V>(
     private val layerCount: Int,
     private val setter: T.(V) -> Unit
 ) : MidiFun, List<PropertyOverlay<T, V?>> by List(layerCount, { PropertyOverlay() }) {
@@ -19,7 +19,7 @@ class PropertyOverlays<T, V>(
 class PropertyOverlay<T, V> : MidiFun {
     private val dirty: MutableMap<T, Boolean> = mutableMapOf()
     private val buffer: MutableMap<T, V> = mutableMapOf()
-    private val generators: MutableMap<T, MidiContext.() -> V?> = mutableMapOf()
+    private val generators: MutableMap<T, DynamicValue<V>> = mutableMapOf()
 
     val dirtyKeys
         get() = dirty.keys.filter { dirty[it] == true }.onEach { dirty.remove(it) }
@@ -33,12 +33,15 @@ class PropertyOverlay<T, V> : MidiFun {
         dirty[key] = true
     }
 
-    operator fun set(key: T, generator: MidiContext.() -> V?) {
-        generators[key] = generator
+    operator fun set(key: T, value: Value<V>) {
+        when (value) {
+            is DynamicValue<V> -> generators[key] = value
+            else -> set(key, value.invoke())
+        }
     }
 
     override fun MidiContext.process(event: MidiEvent) {
-        generators.entries.forEach { (key, generator) -> update(key, generator()) }
+        generators.entries.forEach { (key, generator) -> update(key, generator.supply(midiClock)) }
     }
 
     private fun update(key: T, value: V?) {

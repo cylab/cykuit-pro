@@ -28,7 +28,7 @@ internal class JackMidiOuts private constructor(
 
         val srcName = "${jack.CLIENT_NAME}:$name"
         val destName = available.filterNot { it.startsWith("${jack.CLIENT_NAME}:") }.firstOrNull(predicate)
-            ?: throw NoSuchElementException("Available midi-outs contains no port matching the predicate for $name.")
+            ?: throw NoSuchElementException("Available midi-outs contains no port matching the predicate for '$name'.")
 
         val outPort = jack_port_register(jack.handle, name, JACK_DEFAULT_MIDI_TYPE, JackPortIsOutput.toULong(), 0)
         requireNotNull(outPort)

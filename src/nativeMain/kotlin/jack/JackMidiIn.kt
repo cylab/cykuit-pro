@@ -31,7 +31,7 @@ internal class JackMidiIn(
 ) : MidiIn, MidiGroup() {
     private val eventStruct = nativeHeap.alloc<jack_midi_event_t>()
 
-    override fun add(vararg next: MidiFun) = addAll(next)
+    override fun add(vararg functs: MidiFun) = addAll(functs)
 
     internal fun destroy() {
         nativeHeap.free(eventStruct.rawPtr)

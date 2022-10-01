@@ -29,5 +29,6 @@ open class MidiGroup private constructor(
 
     override fun MidiContext.process(event: MidiEvent) = process(this, event)
 
-    open fun add(vararg next: MidiFun) = addAll(next)
+    open fun add(vararg functs: MidiFun) = addAll(functs)
+    inline fun <reified T> addFor(crossinline funct: MidiContext.(T) -> Unit) = add { if (it is T) this.funct(it) }
 }

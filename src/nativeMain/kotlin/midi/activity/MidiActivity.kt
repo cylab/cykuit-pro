@@ -14,6 +14,7 @@ abstract class MidiActivity(
 
     protected val onProcess = MidiGroup()
     protected val onActivate = MidiGroup()
+    protected val onStartup = MidiGroup()
     protected val onDeactivate = MidiGroup()
     protected val onEvent = MidiGroup()
     protected val onClock = MidiGroup()
@@ -27,8 +28,8 @@ abstract class MidiActivity(
                 activate(midi)
             }
             if(changed) {
-                onChange.forEach { it.process(midi, NOOPEvent) }
                 onChange(midi)
+                onChange.forEach { it.process(midi, NOOPEvent) }
                 changed = false
             }
             when(event){
@@ -50,9 +51,10 @@ abstract class MidiActivity(
         if (!initialized) {
             initialized = true
             onStartup(midi)
+            onStartup.forEach { it.process(midi, NOOPEvent) }
         }
-        onActivate.forEach { it.process(midi, NOOPEvent) }
         onActivate(midi)
+        onActivate.forEach { it.process(midi, NOOPEvent) }
         changed = true
     }
 

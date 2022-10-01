@@ -1,0 +1,27 @@
+package controller.buttons
+
+enum class ButtonCommand {
+    Generic,
+    Select,
+    Mode,
+    PatternUp,
+    PatternDown,
+    Browser,
+    GridLeft,
+    GridRight,
+    Mute,
+    Volume,
+    Pan,
+    Filter,
+    Resonance,
+    Step,
+    Note,
+    Drum,
+    Perform,
+    Shift,
+    Alt,
+    Pattern,
+    Play,
+    Stop,
+    Record,
+}

@@ -19,7 +19,7 @@ open class SwitchableMidiActivity(
     fun switchTo(midi: MidiContext, subActivity: MidiActivity) = subActivity.also {
         when (subActivity) {
             this -> throw IllegalArgumentException("Can't use parent as sub activity!")
-            target -> {}
+            target -> subActivity.activate(midi)
             else -> {
                 println("Switching to ${subActivity}")
                 target?.deactivate(midi)

@@ -1,12 +1,12 @@
 @file:Suppress("EXPERIMENTAL_API_USAGE", "EXPERIMENTAL_UNSIGNED_LITERALS")
 
 import controller.apc40mk2.APC40MK2Controller
-import controller.buttons.MuteButton
+import controller.buttons.ButtonCommand.*
+import controller.buttons.ButtonCommand.Note
 import controller.fire.FireController
 import midi.api.*
 import midi.core.*
 import sequencer.*
-import utils.instanceOf
 
 fun main() = with(MidiClient.default) {
 //    makeColors()
@@ -35,26 +35,40 @@ private fun startFire() = with(MidiClient.default) {
     val controllerOut = midiOuts.connect("FL STUDIO FIRE")
     val instrumentOut = midiOuts.connect("Wavetable")
 
+    val config = Config()
     val controller = FireController()
-    val keyboard = Keyboard(controller)
-    val songControl = SongControl(controller)
-    class Logger(val name: String) : MidiFunImpl ({
-        if (it !is SysrtEvent){
-            print(justify("[$name]" to -10))
-            println(it)
-        }
-        emit(it)
-    })
+    val sequencer = TrackSequencer()
+    val keyboard = Keyboard(controller, config.trackColors[0], area = Rect(4,2,8,2))
 
     midiClock.bpm = 100
-    val buttonViews = ButtonMappedActivities(
-        "Views",
-        controller.buttons.instanceOf<MuteButton>(0) to HomeView(controller),
-        controller.buttons.instanceOf<MuteButton>(1) to keyboard
-    )
-    controllerIn.add(
-        MidiPipe(controller.updater, controllerOut),
-        MidiPipe(Logger("IN"), controller.mapper, Logger("MAPPED"),
-            MidiGroup(songControl, buttonViews), Logger("OUT"), instrumentOut)
-    )
+    with(controller) {
+        val rootViews = MappedActivities(
+            "Root Views",
+            buttons[Pattern][0] to PatternView(config, controller, sequencer),
+            buttons[Generic][0] to HomeView(controller),
+        )
+        val clipEditor = ClipEditor(
+            controller,
+            clip = sequencer.grid[0][0],
+            colors = config.trackColors[0],
+        )
+        controllerIn.add(
+            MidiPipe(updater, controllerOut),
+            MidiPipe(
+                Logger("IN"), mapper, Logger("MAPPED"),
+                MidiGroup(
+                    SongControl(controller),
+                    rootViews
+                ), Logger("OUT"), instrumentOut
+            )
+        )
+    }
 }
+
+class Logger(val name: String) : MidiFunImpl ({
+    if (it !is SysrtEvent){
+        print(justify("[$name]" to -10))
+        println(it)
+    }
+    emit(it)
+})
