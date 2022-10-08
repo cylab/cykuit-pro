@@ -7,7 +7,7 @@ internal class JackContext(private val jack: JackClient) : MidiContext {
     override val midiClock = jack.midiClock
     override var channel = 0
 
-    override fun emit(event: MidiEvent) {
+    override fun emit(event: MidiEvent, defer: Int) {
         /** needs no implementation **/
     }
 

@@ -1,7 +1,7 @@
 plugins {
-    id 'org.jetbrains.kotlin.multiplatform' version '1.6.21'
+    id 'org.jetbrains.kotlin.multiplatform' version '1.7.20'
+    id 'org.jetbrains.kotlin.plugin.serialization' version "1.7.20"
 }
-
 
 repositories {
     google()
@@ -11,11 +11,15 @@ repositories {
 kotlin {
     sourceSets {
         nativeMain.dependencies {
-            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0-native-mt"){
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.3-native-mt"){
                 version {
-                    strictly("1.6.0-native-mt")
+                    strictly("1.6.3-native-mt")
                 }
             }
+        }
+        commonMain.dependencies {
+            implementation("com.soywiz.korlibs.korio:korio:2.2.0")
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.0")
         }
     }
     linuxX64("native") {

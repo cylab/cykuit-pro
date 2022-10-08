@@ -33,7 +33,7 @@ internal class JackMidiOut(
     private val outEvents = mutableListOf<Pair<Int, MidiEvent>>()
 
     override fun MidiContext.process(event: MidiEvent) {
-        outEvents.add(lastTicks + event.defer to event)
+        outEvents.add(lastTicks to event)
     }
 
     internal fun dispatchEvents(ticks: Int, nframes: jack_nframes_t) {

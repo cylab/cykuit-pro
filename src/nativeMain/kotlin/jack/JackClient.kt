@@ -15,6 +15,8 @@ import midi.api.MidiEvent
 import midi.api.MidiIns
 import midi.api.MidiOuts
 
+val jackMidiClient : MidiClient by lazy { JackClient() }
+
 internal class JackClient : MidiClient {
     val CLIENT_NAME = "cykuit-pro"
     val handle: CPointer<jack_client_t>
@@ -103,3 +105,4 @@ internal class JackClient : MidiClient {
 
     override fun toString() = "JackClient"
 }
+

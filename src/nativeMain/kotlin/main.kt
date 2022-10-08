@@ -1,19 +1,23 @@
 @file:Suppress("EXPERIMENTAL_API_USAGE", "EXPERIMENTAL_UNSIGNED_LITERALS")
 
+import controller.Mapping
 import controller.apc40mk2.APC40MK2Controller
 import controller.buttons.ButtonCommand.*
-import controller.buttons.ButtonCommand.Note
 import controller.fire.FireController
+import jack.jackMidiClient
 import midi.api.*
 import midi.core.*
 import sequencer.*
+import sequencer.persistence.SaveFileRepository
+import sequencer.persistence.model.SequenceSave
 
-fun main() = with(MidiClient.default) {
+fun main() = with(jackMidiClient) {
 //    makeColors()
     try {
 //        startApc40()
-        startFire()
-        val readLine = readLine()
+//        startFire()
+//        val readLine = readLine()
+        testFileIO()
     } catch (e: Exception) {
         e.printStackTrace()
     } finally {
@@ -21,7 +25,12 @@ fun main() = with(MidiClient.default) {
     }
 }
 
-private fun startApc40() = with(MidiClient.default) {
+private fun testFileIO() = with(jackMidiClient) {
+    val repo = SaveFileRepository()
+    repo.save("some name", SequenceSave(hello="MyWorld!", whatThe = "Fuck!"))
+}
+
+private fun startApc40() = with(jackMidiClient) {
     val midiIn = midiIns["APC40"] ?: midiIns.connect("APC40")
     val midiOut = midiOuts["APC40"] ?: midiOuts.connect("APC40")
     midiClock.bpm = 100
@@ -29,7 +38,7 @@ private fun startApc40() = with(MidiClient.default) {
     midiIn.add(MidiPipe(APC40MK2Controller(), midiOut))
 }
 
-private fun startFire() = with(MidiClient.default) {
+private fun startFire() = with(jackMidiClient) {
 
     val controllerIn = midiIns.connect("FL STUDIO FIRE")
     val controllerOut = midiOuts.connect("FL STUDIO FIRE")
@@ -38,19 +47,13 @@ private fun startFire() = with(MidiClient.default) {
     val config = Config()
     val controller = FireController()
     val sequencer = TrackSequencer()
-    val keyboard = Keyboard(controller, config.trackColors[0], area = Rect(4,2,8,2))
 
     midiClock.bpm = 100
     with(controller) {
         val rootViews = MappedActivities(
             "Root Views",
-            buttons[Pattern][0] to PatternView(config, controller, sequencer),
-            buttons[Generic][0] to HomeView(controller),
-        )
-        val clipEditor = ClipEditor(
-            controller,
-            clip = sequencer.grid[0][0],
-            colors = config.trackColors[0],
+            Mapping(buttons[Pattern][0]) to PatternView(config, controller, sequencer),
+            Mapping(buttons[Browser][0]) to HomeView(controller),
         )
         controllerIn.add(
             MidiPipe(updater, controllerOut),
@@ -58,15 +61,16 @@ private fun startFire() = with(MidiClient.default) {
                 Logger("IN"), mapper, Logger("MAPPED"),
                 MidiGroup(
                     SongControl(controller),
-                    rootViews
-                ), Logger("OUT"), instrumentOut
+                    rootViews,
+                    sequencer
+                ), instrumentOut
             )
         )
     }
 }
 
-class Logger(val name: String) : MidiFunImpl ({
-    if (it !is SysrtEvent){
+class Logger(val name: String) : MidiFunImpl({
+    if (it !is SysrtEvent) {
         print(justify("[$name]" to -10))
         println(it)
     }
