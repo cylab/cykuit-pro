@@ -1,58 +1,44 @@
-package jack
+package javamidi
 
-import kotlinx.cinterop.CPointer
-import kotlinx.cinterop.alloc
-import kotlinx.cinterop.get
-import kotlinx.cinterop.nativeHeap
-import kotlinx.cinterop.ptr
-import midi.api.Aftertouch
-import midi.api.ContinuePlay
-import midi.api.ControlChange
-import midi.api.EventType
+import midi.api.*
 import midi.api.MidiEvent
-import midi.api.MidiFun
-import midi.api.MidiIn
-import midi.api.MidiNote
-import midi.api.NoteOff
-import midi.api.NoteOn
-import midi.api.PitchBend
-import midi.api.PolyAftertouch
-import midi.api.ProgramChange
-import midi.api.ResetPlay
-import midi.api.Sensing
-import midi.api.StartPlay
-import midi.api.StopPlay
 import midi.core.MidiGroup
+import javax.sound.midi.*
 
-internal class JackMidiIn(
-    private val jack: JackClient,
+internal class JavaMidiIn(
+    private val client: JavaMidiClient,
     override val name: String,
-    private val port: CPointer<jack_port_t>
-) : MidiIn, MidiGroup() {
-    private val eventStruct = nativeHeap.alloc<jack_midi_event_t>()
+    private val inDevice: MidiDevice
+) : MidiIn, MidiGroup(), Receiver {
+
+    init {
+        inDevice.transmitter.receiver = this
+        if(!inDevice.isOpen) {
+            inDevice.open()
+        }
+    }
 
     override fun add(vararg functs: MidiFun) = addAll(functs)
 
+    override fun close() = destroy()
+
     internal fun destroy() {
-        nativeHeap.free(eventStruct.rawPtr)
+        inDevice.transmitter.close()
+        inDevice.close()
     }
 
-    internal fun dispatchEvents(ticks: Int, nframes: jack_nframes_t) {
-        val inputBuffer = jack_port_get_buffer(port, nframes)
-        for (i in 0 until jack_midi_get_event_count(inputBuffer).toInt()) {
-            jack_midi_event_get(eventStruct.ptr, inputBuffer, i.toUInt())
-            val event = eventStruct.toMidiEvent()
-            emitEvent(event)
-        }
+    override fun send(message: MidiMessage?, timeStamp: Long) {
+        emitEvent(message.toMidiEvent())
     }
 
     internal fun emitEvent(event: MidiEvent?) {
         if (event != null) {
-            jack.jackContext.processInContext(event)
+            client.javaMidiContext.processInContext(event)
         }
     }
 
-    private fun jack_midi_event_t?.toMidiEvent(): MidiEvent? {
+
+    private fun MidiMessage?.toMidiEvent(): MidiEvent? {
         val data0 = data(0)
         val type = data0 and 0b1111_0000
         val channel = data0 and 0b0000_1111
@@ -90,10 +76,10 @@ internal class JackMidiIn(
                 program = data(1),
                 channel = channel
             )
-            EventType.SYSRT_START -> StartPlay().also { jack.jackMidiClock.emitClock(it) }
-            EventType.SYSRT_CONTINUE -> ContinuePlay().also { jack.jackMidiClock.emitClock(it) }
-            EventType.SYSRT_STOP -> StopPlay().also { jack.jackMidiClock.emitClock(it) }
-            EventType.SYSRT_RESET -> ResetPlay().also { jack.jackMidiClock.emitClock(it) }
+            EventType.SYSRT_START -> StartPlay().also { client.javaMidiClock.emitClock(it) }
+            EventType.SYSRT_CONTINUE -> ContinuePlay().also { client.javaMidiClock.emitClock(it) }
+            EventType.SYSRT_STOP -> StopPlay().also { client.javaMidiClock.emitClock(it) }
+            EventType.SYSRT_RESET -> ResetPlay().also { client.javaMidiClock.emitClock(it) }
             EventType.SYSRT_SENSING -> Sensing()
             EventType.SYSRT_CLOCK -> {
                 // TODO: learn bpm from ticks for usage in clock and playhead
@@ -103,5 +89,5 @@ internal class JackMidiIn(
         }
     }
 
-    private fun jack_midi_event_t?.data(i: Int) = this?.buffer?.get(i)?.toInt() ?: 0
+    private fun MidiMessage?.data(i: Int) = this?.message?.get(i)?.toInt() ?: 0
 }

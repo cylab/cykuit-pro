@@ -1,15 +1,8 @@
 package utils
 
-import kotlinx.cinterop.*
 import midi.api.*
 import kotlin.math.abs
 
-fun CPointer<CPointerVar<ByteVar>>.toKStrings() = generateSequence(0) { it + 1 }
-    .map { this[it] }
-    .takeWhile { it != null }
-//    .map { ptr -> ptr?.toKString().also { jack_free(ptr) } }
-    .mapNotNull { ptr -> ptr?.toKString() }
-    .toList()
 
 
 fun interface Value<T> {
@@ -28,10 +21,7 @@ inline fun <T> blink(interval: Int, first: T, second: T) = DynamicValue {
     }
 }
 
-
-inline fun fade(interval: Int, first: Value<Int>, second: Value<Int>) : Value<Int?> = DynamicValue {
-    val start = first()
-    val end = second()
+inline fun fade(interval: Int, start: Int, end: Int) : Value<Int?> = DynamicValue {
     val f_start = abs(interval - (ticks % interval) *2)
     val f_end = abs(-f_start + interval)
     val r_mask = 0xff0000

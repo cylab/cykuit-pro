@@ -47,9 +47,7 @@ class ClipEditor(
             }
         }
         onActivate.add {
-            println("Activating Keyboard")
             keyboard.activate()
-            println("Activating Clip")
             clip.activate()
         }
         onDeactivate.add {

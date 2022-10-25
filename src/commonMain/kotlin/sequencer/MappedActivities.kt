@@ -4,11 +4,14 @@ import controller.*
 import controller.events.*
 import midi.activity.MidiActivity
 import midi.activity.SwitchableMidiActivity
+import midi.api.MidiFun
+import midi.api.NOOPEvent
+import midi.core.process
 import utils.PropertyUpdater
 
 open class MappedActivities(
     name: String = "unnamed MappedActivities",
-    protected val mappedActivities: Map<Mapping, MidiActivity>,
+    protected open val activities: Map<Mapping, MidiFun> = emptyMap(),
     val exclusive: Boolean = false,
 ) : SwitchableMidiActivity(name) {
 
@@ -17,42 +20,44 @@ open class MappedActivities(
 
     constructor(
         name: String = "unnamed MappedActivities",
-        vararg mappedActivities: Pair<Mapping, MidiActivity>
+        vararg mappedActivities: Pair<Mapping, MidiFun>
     ) : this(name, mapOf(*mappedActivities), false)
 
     constructor(
         name: String = "unnamed MappedActivities",
         exclusive: Boolean = false,
-        vararg mappedActivities: Pair<Mapping, MidiActivity>
+        vararg mappedActivities: Pair<Mapping, MidiFun>
     ) : this(name, mapOf(*mappedActivities), exclusive)
 
     constructor(
         name: String = "unnamed MappedActivities",
-        mappedActivities: List<Pair<Mapping, MidiActivity>>,
+        mappedActivities: List<Pair<Mapping, MidiFun>>,
         exclusive: Boolean = false,
     ) : this(name, mappedActivities.toMap(), exclusive)
 
-    private val mappedControls: List<MidiControl> = mappedActivities.keys.mapNotNull { it.control }
-
     init {
+//        println("init $name - activities: ${activities.size}")
         onClock.add(buttonUpdater)
 
         onStartup.add {
-            if (mappedActivities.isNotEmpty()) {
+            if (activities.isNotEmpty()) {
                 if (!exclusive) {
-                    activate(this, mappedActivities.values.first())
+                    activities.values
+                        .filterIsInstance<MidiActivity>()
+                        .firstOrNull()
+                        ?.let { activity -> switchTo(this, activity) }
                 }
             }
         }
 
         onChange.add {
-            mappedActivities.entries
+            activities.entries
                 .flatMap { (mapping, activity) ->
                     mapping.modifiers.map { it to activity } + (mapping.control to activity)
                 }
                 .forEach { (control, activity) ->
-                    when (control) {
-                        is Button -> values[control] = when {
+                    when {
+                        control is Button && activity is MidiActivity -> values[control] = when {
                             target == activity && activity.active -> control.ACTIVE
                             else -> control.INACTIVE
                         }
@@ -62,23 +67,32 @@ open class MappedActivities(
         }
 
         onActivate.add {
+            println("activating $name")
             if (exclusive) {
-                mappedActivities.values.forEach { it.deactivate(this) }
+                activities.values
+                    .filterIsInstance<MidiActivity>()
+                    .forEach { activity -> activity.deactivate(this) }
             }
         }
 
         onEvent.addFor<ControlPressed> { event ->
+            val mappedControls: List<MidiControl> = activities.keys.mapNotNull { it.control }
             if (event.control !in mappedControls) {
                 return@addFor
             }
-            mappedActivities.keys
+            activities.keys
                 .firstOrNull { mapping -> mapping.control == event.control && mapping.modifiers.all { it.down } }
                 ?.let {
-                    activate(this, mappedActivities[it]!!)
-                    if (exclusive) {
-                        deactivate(this)
+                    when(val activity = activities[it]!!) {
+                        is MidiActivity -> {
+                            switchTo(this, activity)
+                            if (exclusive) {
+                                deactivate(this)
+                            }
+                            changed = true
+                        }
+                        else -> activity.process(this, NOOPEvent)
                     }
-                    changed = true
                 }
         }
     }

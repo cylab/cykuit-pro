@@ -24,11 +24,11 @@ open class MidiGroup private constructor(
         forEachIndexed { i, fn ->
             val midi = contexts[i]
             midi.target = parentContext
-            with(fn) { midi.process(event) }
+            with(fn) { midi.processInContext(event) }
         }
     }
 
-    override fun MidiContext.process(event: MidiEvent) = process(this, event)
+    override fun MidiContext.processInContext(event: MidiEvent) = process(this, event)
 
     open fun add(vararg functs: MidiFun) = addAll(functs)
     inline fun <reified T> addFor(crossinline funct: MidiContext.(T) -> Unit) = add { if (it is T) this.funct(it) }

@@ -5,5 +5,5 @@ import midi.api.MidiContext
 import midi.api.MidiFun
 
 open class MidiFunImpl(val fn: MidiFun) : MidiFun {
-    override fun MidiContext.process(event: MidiEvent) = with(fn) { process(event) }
+    override fun MidiContext.processInContext(event: MidiEvent) = with(fn) { processInContext(event) }
 }

@@ -54,9 +54,9 @@ class APC40MK2Controller : MidiActivity("APC40 MKII") {
     override fun onEvent(midi: MidiContext, event: MidiEvent) : Unit = with(midi){
         viewSelector.process(midi, event)
         when {
-            event.isNoteOn(As4) -> viewSelector.activate(midi, sceneView)
-            event.isNoteOn(B4) -> viewSelector.activate(midi, patternView)
-            event.isNoteOn(C5) -> viewSelector.activate(midi, sendView)
+            event.isNoteOn(As4) -> viewSelector.switchTo(midi, sceneView)
+            event.isNoteOn(B4) -> viewSelector.switchTo(midi, patternView)
+            event.isNoteOn(C5) -> viewSelector.switchTo(midi, sendView)
             event.isNoteOn(G5) -> midiClock.startPlay()
             event.isNoteOff(G5) -> midiClock.stopPlay()
         }

@@ -1,6 +1,7 @@
 package sequencer
 
 import midi.core.half
+import midi.core.quarter
 import utils.*
 
 class TrackColors(
@@ -11,6 +12,7 @@ class TrackColors(
     val note: Value<Int?>,
     val step: Value<Int?>,
     val active: Value<Int?>,
+    val pending: Value<Int?>,
 )
 
 class Config {
@@ -31,7 +33,8 @@ class Config {
             root = { root },
             note = { note },
             step = { step },
-            active = fade(1.half, { clip }, { empty }),
+            active = fade(1.half, clip, empty),
+            pending = blink(1.half, clip, 0x8080ff),
         )
     }
 //    val trackColors = listOf(

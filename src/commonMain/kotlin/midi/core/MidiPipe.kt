@@ -40,7 +40,7 @@ open class MidiPipe private constructor(midiFuns: List<MidiFun>) : MidiFun, Muta
         currentIn.clear()
     }
 
-    override fun MidiContext.process(event: MidiEvent) = process(this, event)
+    override fun MidiContext.processInContext(event: MidiEvent) = process(this, event)
 
     private class PipeContext(
         var out: MutableList<MidiEvent>,
@@ -66,7 +66,7 @@ open class _MidiPipe private constructor(midiFuns: List<MidiFun>) : MidiFun, Mut
 
     private val contexts = mutableListOf<BufferedMidiContextWrapper>()
 
-    override fun MidiContext.process(event: MidiEvent) = process(this, event)
+    override fun MidiContext.processInContext(event: MidiEvent) = process(this, event)
 
     // workaround to call the "extension-function" from a subclass: https://youtrack.jetbrains.com/issue/KT-11488
     protected fun process(parentContext: MidiContext, event: MidiEvent) {

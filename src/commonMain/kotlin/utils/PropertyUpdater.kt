@@ -8,7 +8,7 @@ class PropertyUpdater<T, V>(
     private val setter: T.(V) -> Unit
 ) : MidiFun, List<PropertyOverlay<T, V?>> by List(layerCount, { PropertyOverlay() }) {
 
-    override fun MidiContext.process(event: MidiEvent) {
+    override fun MidiContext.processInContext(event: MidiEvent) {
         forEach { it.process(this, event) }
         flatMap { it.dirtyKeys }.distinct().forEach { key ->
             mapNotNull { it[key] }.lastOrNull()?.let { key.setter(it) }
@@ -40,7 +40,7 @@ class PropertyOverlay<T, V> : MidiFun {
         }
     }
 
-    override fun MidiContext.process(event: MidiEvent) {
+    override fun MidiContext.processInContext(event: MidiEvent) {
         generators.entries.forEach { (key, generator) -> update(key, generator.supply(midiClock)) }
     }
 

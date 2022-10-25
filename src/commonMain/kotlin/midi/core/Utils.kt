@@ -1,6 +1,9 @@
 package midi.core
 
-import platform.posix.abs
+import midi.api.SysrtEvent
+import kotlin.math.abs
+
+//import platform.posix.abs
 
 val Int.quarter: Int get() = this * 24
 val Int.beat: Int get() = this.quarter
@@ -25,3 +28,11 @@ fun justify(vararg components: Pair<Any?, Int>) = components
         }
     }
     .joinToString(" ")
+
+class Logger(val name: String) : MidiFunImpl({
+    if (it !is SysrtEvent) {
+        print(justify("[$name]" to -10))
+        println(it)
+    }
+    emit(it)
+})

@@ -1,10 +1,7 @@
 @file:OptIn(ExperimentalUnsignedTypes::class)
 
-package jack
+package javamidi
 
-import kotlinx.cinterop.COpaquePointer
-import kotlinx.cinterop.CPointer
-import kotlinx.cinterop.set
 import midi.api.EventType.AFTERTOUCH
 import midi.api.EventType.CONTROL_CHANGE
 import midi.api.EventType.NOTE_OFF
@@ -24,20 +21,28 @@ import midi.api.MidiEvent
 import midi.api.MidiOut
 import midi.api.ProtocolEvent
 import midi.api.SysEx
+import javax.sound.midi.*
 
-internal class JackMidiOut(
+internal class JavaMidiOut(
     override val name: String,
-    private val port: CPointer<jack_port_t>
+    private val outDevice: MidiDevice
 ) : MidiOut {
     var lastTicks = 0
     private val outEvents = mutableListOf<Pair<Int, MidiEvent>>()
+    private val receiver = outDevice.receiver
+
+    init {
+        if(!outDevice.isOpen) {
+            outDevice.open()
+        }
+    }
 
     override fun MidiContext.processInContext(event: MidiEvent) {
         outEvents.add(lastTicks to event)
     }
 
     internal fun dispatchEvents(ticks: Int, nframes: jack_nframes_t) {
-        val outputBuffer = jack_port_get_buffer(port, nframes)
+        val outputBuffer = jack_port_get_buffer(receiver, nframes)
         jack_midi_clear_buffer(outputBuffer);
 
         val it = outEvents.iterator()
@@ -95,5 +100,7 @@ internal class JackMidiOut(
     }
 
     internal fun destroy() {
+        receiver.close()
+        outDevice.close()
     }
 }

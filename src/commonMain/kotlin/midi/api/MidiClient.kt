@@ -1,7 +1,5 @@
 package midi.api
 
-import jack.JackClient
-
 interface MidiClient {
     val midiIns: MidiIns
     val midiOuts: MidiOuts

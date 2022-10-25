@@ -28,13 +28,13 @@ abstract class MidiActivity(
         { event ->
             val midi = this
             if (shouldDeactivate) {
-                println("$name shouldDeactivate=$shouldDeactivate -> deactivate(midi)")
+//                println("$name shouldDeactivate=$shouldDeactivate -> deactivate(midi)")
                 deactivate(midi)
             }
             onProcess.forEach { it.process(midi, event) }
             if (active || shouldActivate) {
                 if (!initialized || shouldActivate) {
-                    println("$name shouldActivate=$shouldActivate -> activate(midi)")
+//                    println("$name shouldActivate=$shouldActivate -> activate(midi)")
                     activate(midi)
                 }
                 if (changed) {
@@ -58,15 +58,16 @@ abstract class MidiActivity(
         MidiPeek { event -> if (active) onEmit.forEach { it.process(this, event) } }
     )
 
-    final override fun MidiContext.process(event: MidiEvent) = eventPipe.process(this, event)
-//    final override fun MidiContext.process(event: MidiEvent) {
+    final override fun MidiContext.processInContext(event: MidiEvent) = eventPipe.process(this, event)
+
+    // TODO: remove this, if the eventPipe above proves to work like intended (peeking for emitted events)
     fun MidiContext._process(event: MidiEvent) {
         val midi = this
+        onProcess.forEach { it.process(midi, event) }
         if (shouldDeactivate) {
-            println("$name shouldDeactivate=$shouldDeactivate -> deactivate(midi)")
+//            println("$name shouldDeactivate=$shouldDeactivate -> deactivate(midi)")
             deactivate(midi)
         }
-        onProcess.forEach { it.process(midi, event) }
         if (active || shouldActivate) {
             if (!initialized || shouldActivate) {
                 println("$name shouldActivate=$shouldActivate -> activate(midi)")

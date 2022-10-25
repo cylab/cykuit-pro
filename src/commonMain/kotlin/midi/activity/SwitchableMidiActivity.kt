@@ -1,7 +1,6 @@
 package midi.activity
 
 import midi.api.MidiContext
-import midi.core.MidiGroup
 import midi.core.process
 
 open class SwitchableMidiActivity(
@@ -15,7 +14,7 @@ open class SwitchableMidiActivity(
         onProcess.add { target?.process(this, it) }
     }
 
-    fun activate(midi: MidiContext, subActivity: MidiActivity) = subActivity.also {
+    fun switchTo(midi: MidiContext, subActivity: MidiActivity) = subActivity.also {
         when (subActivity) {
             this -> throw IllegalArgumentException("Can't use parent as sub activity!")
             target -> subActivity.activate(midi)

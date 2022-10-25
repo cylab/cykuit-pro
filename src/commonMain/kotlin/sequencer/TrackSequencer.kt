@@ -1,8 +1,6 @@
 package sequencer
 
 import midi.activity.*
-import midi.api.MidiContext
-import midi.api.MidiEvent
 import midi.api.MidiNote
 import midi.core.note
 import midi.core.sixteenth
@@ -26,7 +24,7 @@ class Grid private constructor(
 
     override operator fun get(index: Int): Track {
         if (index >= tracks.size) {
-            (tracks.size..index).forEach { tracks.add(Track()) }
+            (tracks.size..index).forEach { tracks.add(Track(sequencer)) }
             sequencer.changed = true
         }
         return tracks[index]
@@ -34,7 +32,7 @@ class Grid private constructor(
 
     operator fun set(index: Int, track: Track) {
         if (index >= tracks.size) {
-            (tracks.size..index).forEach { tracks.add(Track()) }
+            (tracks.size..index).forEach { tracks.add(Track(sequencer)) }
             sequencer.changed = true
         }
         tracks[index] = track
@@ -42,9 +40,33 @@ class Grid private constructor(
 }
 
 class Track private constructor(
+    private val sequencer: TrackSequencer,
     private val clips: MutableList<Clip>
 ) : ExclusiveActivities(activities = clips), List<Clip> by clips {
-    constructor() : this(mutableListOf<Clip>())
+    constructor(sequencer: TrackSequencer) : this(sequencer, mutableListOf<Clip>())
+    var scheduled: Clip? = null; private set
+
+    init {
+        onProcess.add {
+            if (!active || !midiClock.playing) {
+                return@add
+            }
+            // the referenceClip is needed to determine the start of a "bar" so that clips are in sync time
+            val referenceClip = activities.filterIsInstance<Clip>().firstOrNull { it.active } ?: scheduled
+            val nextClip = scheduled
+            val position = when{
+                referenceClip != null -> midiClock.position / referenceClip.stepLength % referenceClip.steps.size
+                else -> -1
+            }
+            // position == 0 means playback of a clip just started or wrapped around
+            if(nextClip != null && position == 0) {
+                activities.forEach { it.deactivate() }
+                if(!nextClip.isEmpty()) nextClip.activate()
+                scheduled = null
+                sequencer.changed = true
+            }
+        }
+    }
 
     override operator fun get(index: Int): Clip {
         if (index >= clips.size) {
@@ -61,6 +83,11 @@ class Track private constructor(
         }
         clips[index] = clip
     }
+
+    fun schedule(clip: Clip) {
+        getOrNull(clip.number)?.takeIf { !it.active }?.let { scheduled = it }
+        changed = true
+    }
 }
 
 class Clip(
@@ -69,6 +96,7 @@ class Clip(
     var position: Int = 0,
     var stepLength: Int = 1.sixteenth
 ) : MidiActivity(name="Clip $number") {
+
     init {
         onClock.add {
             if (!midiClock.playing || midiClock.position % stepLength != 0 || position >= steps.size) {

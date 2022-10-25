@@ -2,7 +2,7 @@ package midi.activity
 
 open class ExclusiveActivities(
     name: String = "unnamed",
-    private val activities: List<MidiActivity>,
+    protected val activities: List<MidiActivity>,
     active: Boolean = true
 ) : SwitchableMidiActivity(name, active) {
     init {
@@ -12,7 +12,7 @@ open class ExclusiveActivities(
                 activity.deactivate()
                 activity.onActivate.add { deactivateOthers(activity) }
             }
-            onProcess.clear()
+            onProcess.removeAll(activities)
             onProcess.addAll(activities)
         }
     }

@@ -14,10 +14,10 @@ import sequencer.persistence.model.SequenceSave
 fun main() = with(jackMidiClient) {
 //    makeColors()
     try {
+//        testFileIO()
 //        startApc40()
-//        startFire()
-//        val readLine = readLine()
-        testFileIO()
+        startFire()
+        val readLine = readLine()
     } catch (e: Exception) {
         e.printStackTrace()
     } finally {
@@ -68,11 +68,3 @@ private fun startFire() = with(jackMidiClient) {
         )
     }
 }
-
-class Logger(val name: String) : MidiFunImpl({
-    if (it !is SysrtEvent) {
-        print(justify("[$name]" to -10))
-        println(it)
-    }
-    emit(it)
-})
